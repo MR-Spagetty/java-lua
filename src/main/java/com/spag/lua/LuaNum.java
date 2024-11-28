@@ -31,7 +31,7 @@ public class LuaNum implements LuaObject, LuaConcatable {
    * Gets the LuaNum representing the given value, should it not already exist a new LuaNum
    * with the given value will be created
    *
-   * @param value the value to obtain the LuaNum of
+   * @param data the value to obtain the LuaNum of
    * @return the LuaNum
    */
   public static LuaNum of(String data) {
