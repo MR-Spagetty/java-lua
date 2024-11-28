@@ -5,10 +5,10 @@
 
   <groupId>com.spag</groupId>
   <artifactId>lua</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
 
   <name>lua</name>
-  <url>http://www.example.com</url>
+  <url>https://mr-spagetty.github.io/JSG-remote-gate-logger/</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
