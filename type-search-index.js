@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"com.spag.lua","l":"LuaBool"},{"p":"com.spag.lua","l":"LuaConcatable"},{"p":"com.spag.lua","l":"LuaNum"},{"p":"com.spag.lua","l":"LuaObject"},{"p":"com.spag.lua","l":"LuaString"},{"p":"com.spag.lua","l":"LuaTable"},{"p":"com.spag.lua","l":"SoftFlyweightUtil"}];updateSearchResults();
