@@ -1,11 +1,10 @@
 package com.spag.lua;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -13,44 +12,43 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * Class to represent lua tables and decoded them from a serialized lua table string (as per the
- * Minecraft OpenComputers mod serialization library), some specifics may not yet be implimented
+ * Class to represent lua tables and decoded them from a serialized lua table
+ * string (as per the Minecraft OpenComputers mod serialization library), some
+ * specifics may not yet be implimented
  *
- * <p><b>NOTE</b>: indexed values index from 1 to preserve behaviour from lua for pairs, ipairs and
- * because tables may be speciallly formulated to account for this
+ * <p>
+ * <b>NOTE</b>: indexed values index from 1 to preserve behaviour from lua for
+ * pairs, ipairs and because tables may be speciallly formulated to account for
+ * this
  *
  * @author MR_Spagetty
  */
 public class LuaTable implements LuaObject {
+  // TODO correct regex to match fixed behaviour
   static final String braceRegex = "^\\{(.*)\\}$";
   public static final Pattern bracePat = Pattern.compile(braceRegex);
   static final String numRegex = "[1-9][0-9]*\\.[0-9]+" + "|0\\.[0-9]+" + "|0|[1-9][0-9]*";
   public static final Pattern numPat = Pattern.compile(numRegex);
   static final String stringRegex = "\\\"\\\"|\\\".*?[^\\\\]\\\"";
   public static final Pattern stringPat = Pattern.compile(stringRegex);
-  public static final Pattern indexed =
-      Pattern.compile(
-          "\\G\\s*("
-              + stringRegex
-              + "|"
-              + numPat
-              + "|\\{((?:[^{}]++|\\{(?:[^{}]++|\\{[^{}]*\\})*\\})*)\\}|"
-              + LuaObject.nil.toString()
-              + "|true|false)\\s*(?:,|\\Z)\\s*");
+  public static final Pattern indexed = Pattern.compile("\\G\\s*(" + stringRegex + "|" + numPat
+      + "|\\{((?:[^{}]++|\\{(?:[^{}]++|\\{[^{}]*\\})*\\})*)\\}|" + LuaObject.nil.toString()
+      + "|true|false)\\s*(?:,|\\Z)\\s*");
   public static final Pattern keyed = Pattern.compile("\\G\\s*(?:(\\w+)|\\[\\\"(.+)\\\"])=");
-  private Map<String, LuaObject> dataByKey = new LinkedHashMap<>();
+  private Map<LuaObject, LuaObject> dataByKey = new LinkedHashMap<>();
 
-  private List<LuaObject> dataByIndex = new ArrayList<>();
+  private List<LuaObject> dataByIndex = new LinkedList<>();
 
   /**
    * emulates the bahviour of lua's ipairs loops
    *
    * @param iterator what to do for each iteration
    */
-  public void ipairs(BiConsumer<Integer, LuaObject> iterator) {
-    IntStream.range(
-            1, Math.min(this.dataByIndex.indexOf(LuaObject.nil) + 1, this.dataByIndex.size() + 1))
-        .forEach(i -> iterator.accept(i, this.dataByIndex.get(i - 1)));
+  public void ipairs(BiConsumer<LuaObject, LuaObject> iterator) {
+    IntStream
+        .range(1,
+            Math.min(this.dataByIndex.indexOf(LuaObject.nil) + 1, this.dataByIndex.size() + 1))
+        .forEach(i -> iterator.accept(LuaNum.of(""+i), this.dataByIndex.get(i - 1)));
   }
 
   /**
@@ -58,14 +56,20 @@ public class LuaTable implements LuaObject {
    *
    * @param iterator what to do for each iteration
    */
-  public void pairs(BiConsumer<String, LuaObject> iterator) {
-    IntStream.range(1, dataByIndex.size())
-        .forEach(i -> iterator.accept("" + i, this.dataByIndex.get(i)));
-    dataByKey.entrySet().forEach(e -> iterator.accept(e.getKey(), e.getValue()));
+  public void pairs(BiConsumer<LuaObject, LuaObject> iterator) {
+    IntStream.range(1, dataByIndex.size()).forEach(i -> {
+      LuaOptional.ofNilable(dataByIndex.get(i))
+          .ifPresent(v -> iterator.accept(LuaNum.of("" + i), v));
+    });
+    dataByKey.entrySet().forEach(e -> {
+      LuaObject key = e.getKey();
+      iterator.accept(key, e.getValue());
+    });
   }
 
   /**
-   * Returns a sequential stream with the indexed data of this table as its source.
+   * Returns a sequential stream with the indexed data of this table as its
+   * source.
    *
    * @return a sequential {@code Stream} over the indexed elements in this table
    */
@@ -74,9 +78,11 @@ public class LuaTable implements LuaObject {
   }
 
   /**
-   * Returns a possibly parallel Stream with the indexed data of this table as its source
+   * Returns a possibly parallel Stream with the indexed data of this table as its
+   * source
    *
-   * @return a possibly parallel {@code Stream} over the indexed elements in this table
+   * @return a possibly parallel {@code Stream} over the indexed elements in this
+   *         table
    */
   public Stream<LuaObject> parallelStream() {
     return this.dataByIndex.parallelStream();
@@ -85,12 +91,15 @@ public class LuaTable implements LuaObject {
   /**
    * Get the element at the given key
    *
-   * <p>if there is no element at the given key nil will be returned as in lua
+   * <p>
+   * if there is no element at the given key nil will be returned as in lua
    *
    * @param key the key to get the item at
-   * @return the element at the given key or nil if ther eis no element at the given key
+   * @return the element at the given key or nil if ther eis no element at the
+   *         given key
    * @throws NullPointerException if the given key is null
    */
+  @Deprecated(forRemoval = true, since = "v2.0")
   public LuaObject get(String key) {
     Objects.requireNonNull(key, "Key may not be null");
     return dataByKey.getOrDefault(key, LuaObject.nil);
@@ -99,23 +108,46 @@ public class LuaTable implements LuaObject {
   /**
    * put a new element in the table at the given key
    *
-   * @param key the key to put the element at
+   * @param key   the key to put the element at
    * @param value the element to put at the key
    * @return the old element at the key
    * @throws NullPointerException if either the key or the element given are null
    * @implNote if the new element is nil this simply removes the old element
    */
+  @Deprecated(forRemoval = true, since = "v2.0")
   public LuaObject put(String key, LuaObject value) {
     Objects.requireNonNull(key, "Key may not be null");
+    LuaObject oldValue = get(key);
+    put(LuaString.of(key), value);
+    return oldValue;
+  }
+
+  /**
+   * put a new element in the table at the given key or index
+   * <p>
+   * as per lua an item being stored at a positive integer will be an indexed item
+   *
+   * @param keyInd the key/index to put the new element at
+   * @param value  the value to put in the table
+   * @throws NullPointerException if either the key or the element given are null
+   * @implNote if the new element is nil and it would be a keyed value it will
+   *           just remove the old value
+   */
+  public void put(LuaObject keyInd, LuaObject value) {
+    Objects.requireNonNull(keyInd, "Key may not be null");
     Objects.requireNonNull(value, "new Element may not be null");
+    if (keyInd instanceof LuaNum ln && ln.isInteger()) {
+      addAtIndex(ln.value.intValue(), value);
+      return;
+    }
     if (value == LuaObject.nil) {
-      if (this.dataByKey.containsKey(key)) {
-        return dataByKey.remove(key);
+      if (this.dataByKey.containsKey(keyInd)) {
+        dataByKey.remove(keyInd);
       }
-      return LuaObject.nil;
+      return;
     }
 
-    return Optional.ofNullable(this.dataByKey.put(key, value)).orElse(LuaObject.nil);
+    this.dataByKey.put(keyInd, value);
   }
 
   /**
@@ -126,7 +158,12 @@ public class LuaTable implements LuaObject {
    * @implNote reminder indexed values are indexed from 1
    * @implNote indexes outside of the range of values stored will return nil
    */
+  @Deprecated(forRemoval = true, since = "v2.0")
   public LuaObject get(int index) {
+    return getByIndex(index);
+  }
+
+  private LuaObject getByIndex(int index) {
     if (index < 1 || index > this.dataByIndex.size()) {
       return LuaObject.nil;
     }
@@ -147,14 +184,20 @@ public class LuaTable implements LuaObject {
   /**
    * inserts the new element at the given index
    *
-   * <p>shifts element at and after the given index to a higher index
+   * <p>
+   * shifts element at and after the given index to a higher index
    *
    * @param index the index to insert he element at
    * @param value the element to insert at the given index
    * @throws NullPointerException if the new element is null
    * @implNote reminder indexed values are indexed from 1
    */
+  @Deprecated(forRemoval = true, since = "v2.0")
   public void add(int index, LuaObject value) {
+    addAtIndex(index, value);
+  }
+
+  private void addAtIndex(int index, LuaObject value) {
     Objects.requireNonNull(value, "new element may not be null");
     this.dataByIndex.add(index - 1, value);
   }
@@ -162,13 +205,18 @@ public class LuaTable implements LuaObject {
   /**
    * replaces the element at the given index
    *
-   * @param i the index to replace
+   * @param i      the index to replace
    * @param newElm the new element
    * @return the old element at that index
    * @throws NullPointerException if the new element is null
    * @implNote reminder indexed values are indexed from 1
    */
+  @Deprecated(forRemoval = true, since = "v2.0")
   public LuaObject replace(int i, LuaObject newElm) {
+    return replaceAtIndex(i, newElm);
+  }
+
+  private LuaObject replaceAtIndex(int i, LuaObject newElm) {
     Objects.requireNonNull(newElm, "the new element may not be null");
     return this.dataByIndex.set(i - 1, newElm);
   }
@@ -190,15 +238,13 @@ public class LuaTable implements LuaObject {
     StringBuilder out = new StringBuilder();
     out.append("{");
     this.dataByIndex.forEach(v -> out.append(v + ","));
-    this.dataByKey
-        .entrySet()
-        .forEach(
-            e ->
-                out.append(
-                    "%s=%s,"
-                        .formatted(
-                            e.getKey().contains(" ") ? "[\"" + e.getKey() + "\"]" : e.getKey(),
-                            e.getValue().toString())));
+    this.dataByKey.entrySet().forEach(e -> {
+      LuaObject key = e.getKey();
+      out.append("%s=%s,".formatted(switch (key) {
+      case LuaString ls -> ls.value.contains(" ") ? "[" + ls + "]" : ls.value;
+      default -> "[" + key + "]";
+      }, e.getValue().toString()));
+    });
     out.setCharAt(out.lastIndexOf(","), '}');
     return out.toString();
   }
@@ -206,26 +252,28 @@ public class LuaTable implements LuaObject {
   /**
    * merges anouther luaTable into this one
    *
-   * <p>indexed items from the other table will be added after items from this one
+   * <p>
+   * indexed items from the other table will be added after items from this one
    *
-   * <p>keyed items from the other table will overide corresponding items in this one
+   * <p>
+   * keyed items from the other table will overide corresponding items in this one
    *
    * @param b the table to merge from
-   * @return this table after the merge operation to allow multiple consecutive opperations in a
-   *     single statement
+   * @return this table after the merge operation to allow multiple consecutive
+   *         opperations in a single statement
    */
   public LuaTable merge(LuaTable b) {
     Stream.concat(stream(), b.stream()).forEach(this::add);
-    Stream.concat(
-            this.dataByKey.entrySet().parallelStream()
-                .filter(e -> !b.dataByKey.containsKey(e.getKey())),
-            b.dataByKey.entrySet().parallelStream())
+    Stream
+        .concat(this.dataByKey.entrySet().parallelStream().filter(
+            e -> !b.dataByKey.containsKey(e.getKey())), b.dataByKey.entrySet().parallelStream())
         .forEach(e -> put(e.getKey(), e.getValue()));
     return this;
   }
 
   /**
-   * creates a new table combinding the data from the given data where a is merged first and then b
+   * creates a new table combinding the data from the given data where a is merged
+   * first and then b
    *
    * @param a the first table to merge the data from
    * @param b the second table to merge the data from
@@ -242,8 +290,10 @@ public class LuaTable implements LuaObject {
   /**
    * parses a LuaTable that is serialized into a string
    *
-   * <p>deserializes the table from the Minecraft OpenComputers mod's serialization format into a
-   * representation of the oringonal LuaTable using the classes from this Library
+   * <p>
+   * deserializes the table from the Minecraft OpenComputers mod's serialization
+   * format into a representation of the oringonal LuaTable using the classes from
+   * this Library
    *
    * @param data the serialized string representation of the table
    * @return the parsed table
