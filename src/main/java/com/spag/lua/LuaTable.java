@@ -102,7 +102,7 @@ public class LuaTable implements LuaObject {
   @Deprecated(forRemoval = true, since = "v2.0")
   public LuaObject get(String key) {
     Objects.requireNonNull(key, "Key may not be null");
-    return dataByKey.getOrDefault(key, LuaObject.nil);
+    return dataByKey.getOrDefault(LuaString.of(key), LuaObject.nil);
   }
 
   /**
