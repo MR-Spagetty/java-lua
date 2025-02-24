@@ -9,29 +9,29 @@ public class TableTests {
   void basicAdd() {
     LuaTable table = new LuaTable();
     var s = LuaString.of("test");
-    table.add(s);
+    table.insert(s);
     var b = LuaBool.of("true");
-    table.add(b);
+    table.insert(b);
     var b2 = LuaBool.of("false");
-    table.add(b2);
+    table.insert(b2);
     var i = LuaNum.of("123");
-    table.add(i);
+    table.insert(i);
     var f = LuaNum.of("1.23");
-    table.add(f);
+    table.insert(f);
     var zero = LuaNum.of("0");
-    table.add(zero);
+    table.insert(zero);
     var zeroFloat = LuaNum.of("0.123");
-    table.add(zeroFloat);
-    table.add(LuaObject.nil);
+    table.insert(zeroFloat);
+    table.insert(LuaObject.nil);
 
     assertEquals(s, table.get(LuaNum.of(1)));
     assertEquals(b, table.get(LuaNum.of(2)));
-    assertEquals(b2, table.get(3));
-    assertEquals(i, table.get(4));
-    assertEquals(f, table.get(5));
-    assertEquals(zero, table.get(6));
-    assertEquals(zeroFloat, table.get(7));
-    assertEquals(LuaObject.nil, table.get(8));
+    assertEquals(b2, table.get(LuaNum.of(3)));
+    assertEquals(i, table.get(LuaNum.of(4)));
+    assertEquals(f, table.get(LuaNum.of(5)));
+    assertEquals(zero, table.get(LuaNum.of(6)));
+    assertEquals(zeroFloat, table.get(LuaNum.of(7)));
+    assertEquals(LuaObject.nil, table.get(LuaNum.of(8)));
   }
 
   @Test
@@ -39,20 +39,20 @@ public class TableTests {
 
     LuaTable table = new LuaTable();
     var s = LuaString.of("test");
-    table.put("String", s);
+    table.put(LuaString.of("String"), s);
     var b = LuaBool.of("true");
-    table.put("T", b);
+    table.put(LuaString.of("T"), b);
     var b2 = LuaBool.of("false");
-    table.put("F", b2);
+    table.put(LuaString.of("F"), b2);
     var i = LuaNum.of("123");
-    table.put("int", i);
+    table.put(LuaString.of("int"), i);
     var f = LuaNum.of("1.23");
-    table.put("float", f);
+    table.put(LuaString.of("float"), f);
     var zero = LuaNum.of("0");
-    table.put("zero", zero);
+    table.put(LuaString.of("zero"), zero);
     var zeroFloat = LuaNum.of("0.123");
-    table.put("zero float", zeroFloat);
-    table.put("nil", LuaObject.nil);
+    table.put(LuaString.of("zero float"), zeroFloat);
+    table.put(LuaString.of("nil"), LuaObject.nil);
 
     assertEquals(s, table.get("String"));
     assertEquals(b, table.get("T"));

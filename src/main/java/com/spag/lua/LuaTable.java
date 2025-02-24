@@ -157,6 +157,9 @@ public class LuaTable implements LuaObject {
   public void put(LuaObject keyInd, LuaObject value) {
     Objects.requireNonNull(keyInd, "Key may not be null");
     Objects.requireNonNull(value, "new Element may not be null");
+    if (keyInd == nil) {
+      throw new IllegalArgumentException("Key may not be nil");
+    }
     if (keyInd instanceof LuaNum ln && ln.isInteger() && ln.isPositive()) {
       int index = ln.value.intValue();
       while (index >= this.dataByIndex.size()) {
