@@ -24,17 +24,17 @@ import java.util.stream.Stream;
  * @author MR_Spagetty
  */
 public class LuaTable implements LuaObject {
-  // TODO correct regex to match fixed behaviour
   static final String braceRegex = "^\\{(.*)\\}$";
   public static final Pattern bracePat = Pattern.compile(braceRegex);
   static final String numRegex = "[1-9][0-9]*\\.[0-9]+" + "|0\\.[0-9]+" + "|0|[1-9][0-9]*";
   public static final Pattern numPat = Pattern.compile(numRegex);
   static final String stringRegex = "\\\"\\\"|\\\".*?[^\\\\]\\\"";
   public static final Pattern stringPat = Pattern.compile(stringRegex);
-  public static final Pattern indexed = Pattern.compile("\\G\\s*(" + stringRegex + "|" + numPat
-      + "|\\{((?:[^{}]++|\\{(?:[^{}]++|\\{[^{}]*\\})*\\})*)\\}|" + LuaObject.nil.toString()
-      + "|true|false)\\s*(?:,|\\Z)\\s*");
-  public static final Pattern keyed = Pattern.compile("\\G\\s*(?:(\\w+)|\\[\\\"(.+)\\\"])=");
+  public static final String luaValueRegex = "(" + stringRegex + "|" + numPat
+  + "|\\{((?:[^{}]++|\\{(?:[^{}]++|\\{[^{}]*\\})*\\})*)\\}|" + LuaObject.nil.toString()
+  + "|true|false)";
+  public static final Pattern indexed = Pattern.compile("\\G\\s*\\s*"+luaValueRegex+"(?:,|\\Z)\\s*");
+  public static final Pattern keyed = Pattern.compile("\\G\\s*(?:([a-zA-Z_]\\w*)|\\["+luaValueRegex+"])\\s*=");
   private Map<LuaObject, LuaObject> dataByKey = new LinkedHashMap<>();
 
   private List<LuaObject> dataByIndex = new LinkedList<>();
