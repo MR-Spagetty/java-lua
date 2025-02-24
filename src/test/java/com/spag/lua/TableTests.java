@@ -3,66 +3,66 @@ package com.spag.lua;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
-
+import static com.spag.lua.Util.*;
 public class TableTests {
   @Test
   void basicAdd() {
     LuaTable table = new LuaTable();
-    var s = LuaString.of("test");
+    var s = ls("test");
     table.insert(s);
-    var b = LuaBool.of("true");
+    var b = lb("true");
     table.insert(b);
-    var b2 = LuaBool.of("false");
+    var b2 = lb("false");
     table.insert(b2);
-    var i = LuaNum.of("123");
+    var i = ln("123");
     table.insert(i);
-    var f = LuaNum.of("1.23");
+    var f = ln("1.23");
     table.insert(f);
-    var zero = LuaNum.of("0");
+    var zero = ln("0");
     table.insert(zero);
-    var zeroFloat = LuaNum.of("0.123");
+    var zeroFloat = ln("0.123");
     table.insert(zeroFloat);
     table.insert(LuaObject.nil);
 
-    assertEquals(s, table.get(LuaNum.of(1)));
-    assertEquals(b, table.get(LuaNum.of(2)));
-    assertEquals(b2, table.get(LuaNum.of(3)));
-    assertEquals(i, table.get(LuaNum.of(4)));
-    assertEquals(f, table.get(LuaNum.of(5)));
-    assertEquals(zero, table.get(LuaNum.of(6)));
-    assertEquals(zeroFloat, table.get(LuaNum.of(7)));
-    assertEquals(LuaObject.nil, table.get(LuaNum.of(8)));
+    assertEquals(s, table.get(ln(1)));
+    assertEquals(b, table.get(ln(2)));
+    assertEquals(b2, table.get(ln(3)));
+    assertEquals(i, table.get(ln(4)));
+    assertEquals(f, table.get(ln(5)));
+    assertEquals(zero, table.get(ln(6)));
+    assertEquals(zeroFloat, table.get(ln(7)));
+    assertEquals(LuaObject.nil, table.get(ln(8)));
   }
 
   @Test
   void put() {
 
     LuaTable table = new LuaTable();
-    var s = LuaString.of("test");
-    table.put(LuaString.of("String"), s);
-    var b = LuaBool.of("true");
-    table.put(LuaString.of("T"), b);
-    var b2 = LuaBool.of("false");
-    table.put(LuaString.of("F"), b2);
-    var i = LuaNum.of("123");
-    table.put(LuaString.of("int"), i);
-    var f = LuaNum.of("1.23");
-    table.put(LuaString.of("float"), f);
-    var zero = LuaNum.of("0");
-    table.put(LuaString.of("zero"), zero);
-    var zeroFloat = LuaNum.of("0.123");
-    table.put(LuaString.of("zero float"), zeroFloat);
-    table.put(LuaString.of("nil"), LuaObject.nil);
+    var s = ls("test");
+    table.put(ls("String"), s);
+    var b = lb("true");
+    table.put(ls("T"), b);
+    var b2 = lb("false");
+    table.put(ls("F"), b2);
+    var i = ln("123");
+    table.put(ls("int"), i);
+    var f = ln("1.23");
+    table.put(ls("float"), f);
+    var zero = ln("0");
+    table.put(ls("zero"), zero);
+    var zeroFloat = ln("0.123");
+    table.put(ls("zero float"), zeroFloat);
+    table.put(ls("nil"), LuaObject.nil);
 
-    assertEquals(s, table.get("String"));
-    assertEquals(b, table.get("T"));
-    assertEquals(b2, table.get("F"));
-    assertEquals(i, table.get("int"));
-    assertEquals(f, table.get("float"));
-    assertEquals(zero, table.get("zero"));
-    assertEquals(zeroFloat, table.get("zero float"));
-    assertEquals(LuaObject.nil, table.get("nil"));
-    assertEquals(LuaObject.nil, table.get("not found"));
+    assertEquals(s, table.get(ls("String")));
+    assertEquals(b, table.get(ls("T")));
+    assertEquals(b2, table.get(ls("F")));
+    assertEquals(i, table.get(ls("int")));
+    assertEquals(f, table.get(ls("float")));
+    assertEquals(zero, table.get(ls("zero")));
+    assertEquals(zeroFloat, table.get(ls("zero float")));
+    assertEquals(LuaObject.nil, table.get(ls("nil")));
+    assertEquals(LuaObject.nil, table.get(ls("not found")));
   }
 
   @Test
@@ -74,7 +74,7 @@ public class TableTests {
   @Test
   void nilOnlyTableToString() {
     LuaTable table = new LuaTable();
-    table.put("whatever", LuaObject.nil);
+    table.put(ls("whatever"), LuaObject.nil);
     assertEquals("{}", table.toString());
   }
 
@@ -93,14 +93,14 @@ public class TableTests {
             +"two={threee={4}}}";
 
     LuaTable intermed = LuaTable.fromString(start);
-    assertEquals(LuaString.of(date), intermed.get(1));
-    assertEquals(LuaString.of(id), intermed.get("id"));
-    LuaTable data = (LuaTable) intermed.get("data");
-    assertEquals(LuaString.of("init"), data.get(1));
-    assertEquals(LuaBool.False, data.get("hasDHD"));
-    assertEquals(LuaString.of("[]"), data.get("dialed"));
-    assertEquals(LuaString.of("idle"), data.get("status"));
-    assertEquals(LuaString.of("Chulak"), data.get("name"));
+    assertEquals(ls(date), intermed.get(ln(1)));
+    assertEquals(ls(id), intermed.get(ls("id")));
+    LuaTable data = (LuaTable) intermed.get(ls("data"));
+    assertEquals(ls("init"), data.get(ln(1)));
+    assertEquals(LuaBool.False, data.get(ls("hasDHD")));
+    assertEquals(ls("[]"), data.get(ls("dialed")));
+    assertEquals(ls("idle"), data.get(ls("status")));
+    assertEquals(ls("Chulak"), data.get(ls("name")));
     assertEquals(start, intermed.toString());
   }
 
@@ -113,15 +113,17 @@ public class TableTests {
   @Test
   void indexOnlyTableToString() {
     LuaTable table = new LuaTable();
-    table.add(LuaString.of("test"));
-    table.add(LuaBool.of("true"));
-    table.add(LuaBool.of("false"));
-    table.add(LuaNum.of("123"));
-    table.add(LuaNum.of("1.23"));
-    table.add(LuaNum.of("0"));
-    table.add(LuaNum.of("0.123"));
-    table.add(LuaObject.nil);
-    table.add(new LuaTable());
+    table.insert(ls("test"));
+    table.insert(lb("true"));
+    table.insert(lb("false"));
+    table.insert(ln("123"));
+    table.insert(ln("1.23"));
+    table.insert(ln("0"));
+    table.insert(ln("0.123"));
+    table.insert(LuaObject.nil);
+    table.insert(new LuaTable());
+    assertEquals("{\"test\",true,false,123,1.23,0,0.123,{}}", table.toString());
+    table.insert(ln(8), LuaObject.nil);
     assertEquals("{\"test\",true,false,123,1.23,0,0.123,nil,{}}", table.toString());
   }
 }
