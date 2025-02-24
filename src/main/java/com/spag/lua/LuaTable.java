@@ -5,6 +5,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,9 +27,9 @@ import java.util.stream.Stream;
 public class LuaTable implements LuaObject {
   static final String braceRegex = "^\\{(.*)\\}$";
   public static final Pattern bracePat = Pattern.compile(braceRegex);
-  static final String numRegex = "[1-9][0-9]*\\.[0-9]+" + "|0\\.[0-9]+" + "|0|[1-9][0-9]*";
+  static final String numRegex = "-?(([1-9][0-9]*\\.[0-9]+" + ")|(0\\.[0-9]+)|0|([1-9][0-9]*))";
   public static final Pattern numPat = Pattern.compile(numRegex);
-  static final String stringRegex = "\\\"\\\"|\\\".*?[^\\\\]\\\"";
+  static final String stringRegex = "((\\\"\\\")|(\\\".*?[^\\\\]\\\"))";
   public static final Pattern stringPat = Pattern.compile(stringRegex);
   public static final String luaValueRegex = "(" + stringRegex + "|" + numPat
       + "|\\{((?:[^{}]++|\\{(?:[^{}]++|\\{[^{}]*\\})*\\})*)\\}|" + LuaObject.nil.toString()
@@ -324,7 +325,8 @@ public class LuaTable implements LuaObject {
    * indexed items from the other table will be added after items from this one
    *
    * <p>
-   * keyed items from the other table will override corresponding items in this one
+   * keyed items from the other table will override corresponding items in this
+   * one
    *
    * @param b the table to merge from
    * @return this table after the merge operation to allow multiple consecutive
@@ -382,13 +384,18 @@ public class LuaTable implements LuaObject {
         out.add(parseObject(val));
       }
       while (keyedValues.find(end)) {
-        String key = keyedValues.group(1);
+        String key = Optional.ofNullable(keyedValues.group(1)).orElse(keyedValues.group(2));
+        if (!stringPat.matcher(key).matches() && key.startsWith("[") && key.endsWith("]")) {
+          key = key.substring(1, key.length() - 1);
+        } else if (Pattern.matches("[a-zA-Z_]\\w*", key)) {
+          key = "\"" + key + "\"";
+        }
         if (!indexedValues.find(keyedValues.end())) {
           throw new IllegalArgumentException("Invalid lua table, no value for key: " + key);
         }
         String val = indexedValues.group(1);
         end = indexedValues.end();
-        out.put(key, parseObject(val));
+        out.put(parseObject(key), parseObject(val));
       }
     }
     return out;
@@ -417,7 +424,9 @@ public class LuaTable implements LuaObject {
 
   @Override
   public boolean equals(Object obj) {
-    if (!(obj instanceof LuaTable)){return false;}
+    if (!(obj instanceof LuaTable)) {
+      return false;
+    }
     LuaTable other = (LuaTable) obj;
     return this.dataByIndex.equals(other.dataByIndex) && this.dataByKey.equals(other.dataByKey);
   }
