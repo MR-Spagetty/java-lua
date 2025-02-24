@@ -183,4 +183,63 @@ public class TableTests {
     assertEquals(a, transitiveMerge);
     assertEquals(staticMerge, transitiveMerge);
   }
+
+  @Test
+  void explicitStringKey() {
+    LuaTable a = LuaTable.fromString("{[\"0test blah blah\"]=3}");
+    LuaTable b = new LuaTable();
+    b.put(ls("0test blah blah"), ln(3));
+    assertEquals("{[\"0test blah blah\"]}", a.toString());
+    assertEquals("{[\"0test blah blah\"]}", b.toString());
+    assertEquals(a, b);
+  }
+
+  @Test
+  void explicitStringSimplify() {
+    LuaTable a = LuaTable.fromString("{[\"test\"]=0}");
+    assertEquals("{test=0}", a.toString());
+  }
+
+  @Test
+  void negIntKey() {
+    LuaTable a = LuaTable.fromString("{[-123]=true}");
+    LuaTable b = new LuaTable();
+    b.put(ln(-123), lb(true));
+    assertEquals(b, a);
+    assertEquals("{-123=true}", a.toString());
+  }
+
+  @Test
+  void negFloatKey() {
+    LuaTable a = LuaTable.fromString("{[-1.23]=true}");
+    LuaTable b = new LuaTable();
+    b.put(ln(-1.23), lb(true));
+    assertEquals(b, a);
+    assertEquals("{-1.23=true}", a.toString());
+  }
+
+  @Test
+  void zeroKey() {
+    LuaTable a = LuaTable.fromString("{[0]=true}");
+    LuaTable b = new LuaTable();
+    b.put(ln(0), lb(true));
+    assertEquals(b, a);
+    assertEquals("{[0]=true}", a.toString());
+  }
+  @Test
+  void posFloatKey() {
+    LuaTable a = LuaTable.fromString("{[1.23]=true}");
+    LuaTable b = new LuaTable();
+    b.put(ln(1.23), lb(true));
+    assertEquals(b, a);
+    assertEquals("{[1.23]=true}", a.toString());
+  }
+
+  @Test 
+  void posIntPut() {
+    LuaTable a = new LuaTable();
+    a.put(ln(5), lb(true));
+    LuaTable b = LuaTable.fromString("{nil, nil, nil, nil, true}");
+    assertEquals(b, a);
+  }
 }
