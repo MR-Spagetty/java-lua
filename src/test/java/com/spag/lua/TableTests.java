@@ -1,12 +1,15 @@
 package com.spag.lua;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 import static com.spag.lua.Util.*;
+
 public class TableTests {
   @Test
-  void basicAdd() {
+  void basicInsert() {
     LuaTable table = new LuaTable();
     var s = ls("test");
     table.insert(s);
@@ -32,6 +35,7 @@ public class TableTests {
     assertEquals(zero, table.get(ln(6)));
     assertEquals(zeroFloat, table.get(ln(7)));
     assertEquals(LuaObject.nil, table.get(ln(8)));
+    assertEquals(LuaObject.nil, table.get(ln(20)));
   }
 
   @Test
@@ -53,6 +57,8 @@ public class TableTests {
     var zeroFloat = ln("0.123");
     table.put(ls("zero float"), zeroFloat);
     table.put(ls("nil"), LuaObject.nil);
+
+    assertThrows(IllegalArgumentException.class, () -> table.put(LuaObject.nil, ls("nil key")));
 
     assertEquals(s, table.get(ls("String")));
     assertEquals(b, table.get(ls("T")));
@@ -82,15 +88,9 @@ public class TableTests {
   void stringEqual() {
     String date = "03/02/70 04:28:08";
     String id = "1eb0a1e1-9a12-41e9-a297-76bd6485d70d";
-    String start =
-        "{\""
-            + date
-            + "\","
-            + "id=\""
-            + id
-            + "\","
-            + "data={\"init\",hasDHD=false,dialed=\"[]\",status=\"idle\",name=\"Chulak\"},"
-            +"two={threee={4}}}";
+    String start = "{\"" + date + "\"," + "id=\"" + id + "\","
+        + "data={\"init\",hasDHD=false,dialed=\"[]\",status=\"idle\",name=\"Chulak\"},"
+        + "two={threee={4}}}";
 
     LuaTable intermed = LuaTable.fromString(start);
     assertEquals(ls(date), intermed.get(ln(1)));
@@ -105,9 +105,20 @@ public class TableTests {
   }
 
   @Test
+  void equal() {
+    LuaTable a1 = mergeTableA();
+    LuaTable a2 = mergeTableA();
+    assertEquals(a1, a2);
+    LuaTable b = mergeTableB();
+    assertNotEquals(a2, b);
+  }
+
+  @Test
   void nilToEmpty() {
     String init = "{wow=nil,a=nil,nil=nil}";
-    assertEquals("{}", LuaTable.fromString(init).toString());
+    LuaTable res = LuaTable.fromString(init);
+    assertEquals("{}", res.toString());
+    assertEquals(new LuaTable(), res);
   }
 
   @Test
@@ -125,5 +136,51 @@ public class TableTests {
     assertEquals("{\"test\",true,false,123,1.23,0,0.123,{}}", table.toString());
     table.insert(ln(8), LuaObject.nil);
     assertEquals("{\"test\",true,false,123,1.23,0,0.123,nil,{}}", table.toString());
+  }
+
+  LuaTable mergeTableA() {
+    return LuaTable.fromString("{a = 2, 1, 2, 3, b = 3}");
+  }
+
+  LuaTable mergeTableB() {
+    return LuaTable.fromString("{b = 4, 4, c = 5}");
+  }
+
+  LuaTable mergeExpectedResult() {
+    return LuaTable.fromString("{1,2,3,4,a=2,b=4,c=5}");
+  }
+
+  @Test
+  void merge1() {
+    LuaTable a = mergeTableA();
+    LuaTable b = mergeTableB();
+    assertEquals(mergeExpectedResult(), a.merge(b));
+  }
+
+  @Test
+  void merge2() {
+    LuaTable a = mergeTableA();
+    LuaTable b = mergeTableB();
+    assertEquals(mergeExpectedResult(), LuaTable.merge(a, b));
+  }
+
+  @Test
+  void merge3() {
+    LuaTable a = mergeTableA();
+    LuaTable b = mergeTableB();
+    assertEquals(mergeExpectedResult(), new LuaTable().merge(a).merge(b));
+  }
+
+  @Test
+  void mergeTransativity() {
+    LuaTable a = mergeTableA();
+    LuaTable b = mergeTableB();
+    LuaTable staticMerge = LuaTable.merge(a, b);
+    LuaTable transitiveMerge = new LuaTable().merge(a).merge(b);
+    a.merge(b);
+    assertEquals(mergeExpectedResult(), a);
+    assertEquals(a, staticMerge);
+    assertEquals(a, transitiveMerge);
+    assertEquals(staticMerge, transitiveMerge);
   }
 }

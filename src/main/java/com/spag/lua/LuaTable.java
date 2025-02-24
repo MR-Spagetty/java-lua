@@ -31,10 +31,12 @@ public class LuaTable implements LuaObject {
   static final String stringRegex = "\\\"\\\"|\\\".*?[^\\\\]\\\"";
   public static final Pattern stringPat = Pattern.compile(stringRegex);
   public static final String luaValueRegex = "(" + stringRegex + "|" + numPat
-  + "|\\{((?:[^{}]++|\\{(?:[^{}]++|\\{[^{}]*\\})*\\})*)\\}|" + LuaObject.nil.toString()
-  + "|true|false)";
-  public static final Pattern indexed = Pattern.compile("\\G\\s*\\s*"+luaValueRegex+"(?:,|\\Z)\\s*");
-  public static final Pattern keyed = Pattern.compile("\\G\\s*(?:([a-zA-Z_]\\w*)|\\["+luaValueRegex+"])\\s*=");
+      + "|\\{((?:[^{}]++|\\{(?:[^{}]++|\\{[^{}]*\\})*\\})*)\\}|" + LuaObject.nil.toString()
+      + "|true|false)";
+  public static final Pattern indexed = Pattern
+      .compile("\\G\\s*\\s*" + luaValueRegex + "(?:,|\\Z)\\s*");
+  public static final Pattern keyed = Pattern
+      .compile("\\G\\s*(?:([a-zA-Z_]\\w*)|\\[" + luaValueRegex + "])\\s*=");
   private Map<LuaObject, LuaObject> dataByKey = new LinkedHashMap<>();
 
   private List<LuaObject> dataByIndex = new LinkedList<>();
@@ -44,22 +46,22 @@ public class LuaTable implements LuaObject {
    *
    * @param iterator what to do for each iteration
    */
-  public void ipairs(BiConsumer<LuaObject, LuaObject> iterator) {
+  public void ipairs(BiConsumer<LuaNum, LuaObject> iterator) {
     IntStream
         .range(1,
             Math.min(this.dataByIndex.indexOf(LuaObject.nil) + 1, this.dataByIndex.size() + 1))
-        .forEach(i -> iterator.accept(LuaNum.of("" + i), this.dataByIndex.get(i - 1)));
+        .forEach(i -> iterator.accept(LuaNum.of(i), this.dataByIndex.get(i - 1)));
   }
 
   /**
-   * emulatees the behaviour of lua's pairs loops
+   * emulates the behaviour of lua's pairs loops
    *
    * @param iterator what to do for each iteration
    */
   public void pairs(BiConsumer<LuaObject, LuaObject> iterator) {
     IntStream.range(1, dataByIndex.size()).forEach(i -> {
-      LuaOptional.ofNilable(dataByIndex.get(i))
-          .ifPresent(v -> iterator.accept(LuaNum.of("" + i), v));
+      LuaOptional.ofNilable(dataByIndex.get(i - 1))
+          .ifPresent(v -> iterator.accept(LuaNum.of(i), v));
     });
     dataByKey.entrySet().forEach(e -> {
       LuaObject key = e.getKey();
@@ -316,24 +318,21 @@ public class LuaTable implements LuaObject {
   }
 
   /**
-   * merges anouther luaTable into this one
+   * merges another luaTable into this one
    *
    * <p>
    * indexed items from the other table will be added after items from this one
    *
    * <p>
-   * keyed items from the other table will overide corresponding items in this one
+   * keyed items from the other table will override corresponding items in this one
    *
    * @param b the table to merge from
    * @return this table after the merge operation to allow multiple consecutive
-   *         opperations in a single statement
+   *         operations in a single statement
    */
   public LuaTable merge(LuaTable b) {
-    Stream.concat(stream(), b.stream()).forEach(this::add);
-    Stream
-        .concat(this.dataByKey.entrySet().parallelStream().filter(
-            e -> !b.dataByKey.containsKey(e.getKey())), b.dataByKey.entrySet().parallelStream())
-        .forEach(e -> put(e.getKey(), e.getValue()));
+    this.dataByIndex.addAll(b.dataByIndex);
+    b.dataByKey.entrySet().parallelStream().forEach(e -> put(e.getKey(), e.getValue()));
     return this;
   }
 
@@ -414,5 +413,12 @@ public class LuaTable implements LuaObject {
   @Override
   public String type() {
     return "LuaTable";
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof LuaTable)){return false;}
+    LuaTable other = (LuaTable) obj;
+    return this.dataByIndex.equals(other.dataByIndex) && this.dataByKey.equals(other.dataByKey);
   }
 }
