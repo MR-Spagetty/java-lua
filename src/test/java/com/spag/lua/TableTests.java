@@ -189,8 +189,8 @@ public class TableTests {
     LuaTable a = LuaTable.fromString("{[\"0test blah blah\"]=3}");
     LuaTable b = new LuaTable();
     b.put(ls("0test blah blah"), ln(3));
-    assertEquals("{[\"0test blah blah\"]}", a.toString());
-    assertEquals("{[\"0test blah blah\"]}", b.toString());
+    assertEquals("{[\"0test blah blah\"]=3}", a.toString());
+    assertEquals("{[\"0test blah blah\"]=3}", b.toString());
     assertEquals(a, b);
   }
 
@@ -206,7 +206,7 @@ public class TableTests {
     LuaTable b = new LuaTable();
     b.put(ln(-123), lb(true));
     assertEquals(b, a);
-    assertEquals("{-123=true}", a.toString());
+    assertEquals("{[-123]=true}", a.toString());
   }
 
   @Test
@@ -215,7 +215,7 @@ public class TableTests {
     LuaTable b = new LuaTable();
     b.put(ln(-1.23), lb(true));
     assertEquals(b, a);
-    assertEquals("{-1.23=true}", a.toString());
+    assertEquals("{[-1.23]=true}", a.toString());
   }
 
   @Test
