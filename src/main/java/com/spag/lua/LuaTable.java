@@ -48,7 +48,7 @@ public class LuaTable implements LuaObject {
     IntStream
         .range(1,
             Math.min(this.dataByIndex.indexOf(LuaObject.nil) + 1, this.dataByIndex.size() + 1))
-        .forEach(i -> iterator.accept(LuaNum.of(""+i), this.dataByIndex.get(i - 1)));
+        .forEach(i -> iterator.accept(LuaNum.of("" + i), this.dataByIndex.get(i - 1)));
   }
 
   /**
@@ -102,7 +102,28 @@ public class LuaTable implements LuaObject {
   @Deprecated(forRemoval = true, since = "v2.0")
   public LuaObject get(String key) {
     Objects.requireNonNull(key, "Key may not be null");
-    return dataByKey.getOrDefault(LuaString.of(key), LuaObject.nil);
+    return get(LuaString.of(key));
+  }
+
+  /**
+   * Gets the element at te given key/index
+   * <p>
+   * if there is no element at the given key/index nil will be returned as in lua.
+   * <p>
+   * additionally as in lua numbers which are positive integers are treated as
+   * indexes
+   *
+   * @param keyInd the key/index to get the value at
+   * @return the element at the given key or nil if there is no element at the
+   *         given key
+   * @throws NullPointerException if hte given key/index is null
+   */
+  public LuaObject get(LuaObject keyInd) {
+    Objects.requireNonNull(keyInd, "Key/Index may not be null");
+    if (keyInd instanceof LuaNum ln && ln.isPositive() && ln.isInteger()) {
+      return getByIndex(ln.value.intValue());
+    }
+    return dataByKey.getOrDefault(keyInd, LuaObject.nil);
   }
 
   /**
@@ -136,8 +157,15 @@ public class LuaTable implements LuaObject {
   public void put(LuaObject keyInd, LuaObject value) {
     Objects.requireNonNull(keyInd, "Key may not be null");
     Objects.requireNonNull(value, "new Element may not be null");
-    if (keyInd instanceof LuaNum ln && ln.isInteger()) {
-      addAtIndex(ln.value.intValue(), value);
+    if (keyInd instanceof LuaNum ln && ln.isInteger() && ln.isPositive()) {
+      int index = ln.value.intValue();
+      while (index >= this.dataByIndex.size()) {
+        this.dataByIndex.add(nil);
+      }
+      this.dataByIndex.set(index - 1, value);
+      while (this.dataByIndex.getLast() == nil) {
+        this.dataByIndex.removeLast();
+      }
       return;
     }
     if (value == LuaObject.nil) {
@@ -148,6 +176,44 @@ public class LuaTable implements LuaObject {
     }
 
     this.dataByKey.put(keyInd, value);
+  }
+
+  /**
+   * inserts the given value at the end of the indexed values of this table
+   * 
+   * @param value the value to insert
+   * @see #insert(LuaNum, LuaObject)
+   */
+  public void insert(LuaObject value) {
+    insert(LuaNum.of(dataByIndex.size() + 1), value);
+  }
+
+  /**
+   * inserts the new value at the given index shunting items at the given index
+   * and higher up
+   *
+   * @param index
+   * @param value
+   * @implNote indexed from 1 as per lua
+   * @throws IllegalArgumentException  if the given index is not valid (i.e. non
+   *                                   positive integers)
+   * @throws IndexOutOfBoundsException if the given index is outside of the range
+   *                                   of valid indexes
+   */
+  public void insert(LuaNum index, LuaObject value) {
+    Objects.requireNonNull(index);
+    Objects.requireNonNull(value);
+    if (!index.isInteger() || !index.isPositive()) {
+      throw new IllegalArgumentException("Expected positive integer for index");
+    }
+    int i = index.value.intValue();
+    if (i > this.dataByIndex.size() + 1) {
+      throw new IndexOutOfBoundsException(i);
+    }
+    this.dataByIndex.add(i - 1, value);
+    while (this.dataByIndex.getLast() == nil) {
+      this.dataByIndex.removeLast();
+    }
   }
 
   /**
@@ -176,6 +242,7 @@ public class LuaTable implements LuaObject {
    * @param value the new element to add
    * @throws NullPointerException if the new element is null
    */
+  @Deprecated(forRemoval = true, since = "v2.0")
   public void add(LuaObject value) {
     Objects.requireNonNull(value, "new element may not be null");
     this.dataByIndex.add(value);
@@ -194,10 +261,6 @@ public class LuaTable implements LuaObject {
    */
   @Deprecated(forRemoval = true, since = "v2.0")
   public void add(int index, LuaObject value) {
-    addAtIndex(index, value);
-  }
-
-  private void addAtIndex(int index, LuaObject value) {
     Objects.requireNonNull(value, "new element may not be null");
     this.dataByIndex.add(index - 1, value);
   }

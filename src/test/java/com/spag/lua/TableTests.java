@@ -24,8 +24,8 @@ public class TableTests {
     table.add(zeroFloat);
     table.add(LuaObject.nil);
 
-    assertEquals(s, table.get(1));
-    assertEquals(b, table.get(2));
+    assertEquals(s, table.get(LuaNum.of(1)));
+    assertEquals(b, table.get(LuaNum.of(2)));
     assertEquals(b2, table.get(3));
     assertEquals(i, table.get(4));
     assertEquals(f, table.get(5));
