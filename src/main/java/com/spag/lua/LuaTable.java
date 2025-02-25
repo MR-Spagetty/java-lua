@@ -37,7 +37,7 @@ public class LuaTable implements LuaObject {
   public static final Pattern indexed = Pattern
       .compile("\\G\\s*\\s*" + luaValueRegex + "(?:,|\\Z)\\s*");
   public static final Pattern keyed = Pattern
-      .compile("\\G\\s*(?:([a-zA-Z_]\\w*)|\\[" + luaValueRegex + "])\\s*=");
+      .compile("\\G\\s*(?:([a-zA-Z_]\\w*)|(\\[" + luaValueRegex + "]))\\s*=");
   private Map<LuaObject, LuaObject> dataByKey = new LinkedHashMap<>();
 
   private List<LuaObject> dataByIndex = new LinkedList<>();
@@ -310,7 +310,8 @@ public class LuaTable implements LuaObject {
     this.dataByKey.entrySet().forEach(e -> {
       LuaObject key = e.getKey();
       out.append("%s=%s,".formatted(switch (key) {
-      case LuaString ls -> ls.value.contains(" ") ? "[" + ls + "]" : ls.value;
+      case LuaString ls -> ls.value.contains(" ") || ls.value.equals("true")
+          || ls.value.equals("false") ? "[" + ls + "]" : ls.value;
       default -> "[" + key + "]";
       }, e.getValue().toString()));
     });
@@ -384,8 +385,12 @@ public class LuaTable implements LuaObject {
         out.add(parseObject(val));
       }
       while (keyedValues.find(end)) {
-        String key = Optional.ofNullable(keyedValues.group(1)).orElse(keyedValues.group(2));
-        if (!stringPat.matcher(key).matches() && key.startsWith("[") && key.endsWith("]")) {
+        String key = Optional.ofNullable(keyedValues.group(2)).orElse(keyedValues.group(1));
+        if (key.equals("true") || key.equals("false") || key.equals("nil")) {
+          throw new IllegalArgumentException(
+              "implicit string keys may not match boolean value names or nil");
+        } else if (key.startsWith("[") && key.endsWith(
+            "]") /* && (!stringPat.matcher(key.substring(1, key.length()-1)).matches()) */) {
           key = key.substring(1, key.length() - 1);
         } else if (Pattern.matches("[a-zA-Z_]\\w*", key)) {
           key = "\"" + key + "\"";
