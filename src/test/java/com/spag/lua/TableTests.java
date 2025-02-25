@@ -115,7 +115,7 @@ public class TableTests {
 
   @Test
   void nilToEmpty() {
-    String init = "{wow=nil,a=nil,nil=nil}";
+    String init = "{wow=nil,a=nil}";
     LuaTable res = LuaTable.fromString(init);
     assertEquals("{}", res.toString());
     assertEquals(new LuaTable(), res);
@@ -241,5 +241,32 @@ public class TableTests {
     a.put(ln(5), lb(true));
     LuaTable b = LuaTable.fromString("{nil, nil, nil, nil, true}");
     assertEquals(b, a);
+  }
+
+  @Test
+  void boolKey() {
+    LuaTable a = LuaTable.fromString("{[true]=true}");
+    LuaTable b = new LuaTable();
+    b.put(lb(true), lb(true));
+    assertEquals(b, a);
+    assertEquals("{[true]=true}", a.toString());
+  }
+
+  @Test
+  void boolImplicitStringKey() {
+    assertThrows(IllegalArgumentException.class, () -> LuaTable.fromString("{true=0}"));
+    assertThrows(IllegalArgumentException.class, () -> LuaTable.fromString("{false=0}"));
+  }
+
+  @Test
+  void nilKey() {
+    assertThrows(IllegalArgumentException.class, () -> LuaTable.fromString("{nil=0}"));
+  }
+
+  @Test
+  void boolStringKeysToString() {
+    String exp = "{[\"true\"]=1,[\"false\"]=0}";
+    LuaTable a = LuaTable.fromString(exp);
+    assertEquals(exp, a.toString());
   }
 }
